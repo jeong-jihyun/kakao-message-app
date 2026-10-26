@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 // "나에게 보내기" 카카오톡 메시지 API 호출
 export async function POST(request) {
-  const token = cookies().get("kakao_access_token")?.value;
+  const token = (await cookies()).get("kakao_access_token")?.value;
   if (!token) {
     return NextResponse.json({ error: "로그인이 필요해요." }, { status: 401 });
   }
