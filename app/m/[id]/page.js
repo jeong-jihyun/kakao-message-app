@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { loadMessage } from "../../../lib/messages.js";
 import { isHtml, sanitizeDetail } from "../../../lib/render.js";
 
@@ -19,6 +21,28 @@ function when(ms) {
 export default async function MessagePage({ params }) {
   const { id } = await params;
   const m = await loadMessage(id);
+
+  // 링크 메시지: 카카오는 등록한 도메인(이 앱)만 정상으로 열어 주므로 여기를 거쳐 원래 링크로 보낸다.
+  // 카카오톡 안에서 열렸으면 외부 브라우저(크롬·엣지 등)로 띄우고, 아니면 바로 이동한다.
+  if (m?.redirect && /^https?:\/\//.test(m.redirect)) {
+    const ua = (await headers()).get("user-agent") || "";
+    if (/KAKAOTALK/i.test(ua)) {
+      const ext = "kakaotalk://web/openExternal?url=" + encodeURIComponent(m.redirect);
+      return (
+        <main style={{ maxWidth: 560, margin: "40px auto", padding: 24, textAlign: "center" }}>
+          <p style={{ color: "#666" }}>브라우저로 여는 중입니다…</p>
+          <p>
+            <a href={ext} style={{ fontWeight: 700 }}>열리지 않으면 여기를 누르세요</a>
+          </p>
+          <p>
+            <a href={m.redirect} style={{ color: "#888", fontSize: 14 }}>카카오톡 안에서 보기</a>
+          </p>
+          <script dangerouslySetInnerHTML={{ __html: `location.replace(${JSON.stringify(ext)});` }} />
+        </main>
+      );
+    }
+    redirect(m.redirect);
+  }
 
   const card = {
     maxWidth: 560,

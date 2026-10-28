@@ -31,17 +31,22 @@ async function handle(request, { key, text, link, detail, title, desc, image }) 
 
   // 링크를 직접 주면 그 링크를, 안 주면 이 메시지의 전문을 보여 주는 상세 화면을 연다.
   const base = baseUrl(request);
-  let safeLink = link && /^https?:\/\//.test(link) ? link : null;
+  const userLink = link && /^https?:\/\//.test(link) ? link : null;
+  let safeLink = null;
   let detailSaved = false;
-  if (!safeLink) {
-    const full = (detail || "").toString().trim() || message;
-    try {
-      const id = await saveMessage({ text: shown, detail: full.slice(0, MAX_DETAIL) });
-      safeLink = `${base}/m/${id}`;
-      detailSaved = true;
-    } catch {
-      safeLink = base; // 저장에 실패해도 알림은 보낸다
-    }
+  // 카카오는 등록한 도메인(이 앱 주소)의 링크만 정상으로 열어 준다.
+  // 그래서 다른 사이트 링크도 이 앱의 /m/<난수> 를 거쳐 원래 링크로 넘어가게 한다.
+  const full = (detail || "").toString().trim() || message;
+  try {
+    const id = await saveMessage({
+      text: shown,
+      detail: full.slice(0, MAX_DETAIL),
+      redirect: userLink || undefined,
+    });
+    safeLink = `${base}/m/${id}`;
+    detailSaved = !userLink;
+  } catch {
+    safeLink = userLink || base; // 저장에 실패해도 알림은 보낸다
   }
 
   // 카드(이미지+제목+설명): image 를 직접 주거나, link 를 주면 그 페이지의 미리보기 정보를 가져와 쓴다.
@@ -49,8 +54,8 @@ async function handle(request, { key, text, link, detail, title, desc, image }) 
   let cardImage = image && isPublicHttps(image) ? image : "";
   let cardTitle = (title || "").toString().trim();
   let cardDesc = (desc || "").toString().trim();
-  if (link && /^https?:\/\//.test(link) && (!cardImage || !cardTitle || !cardDesc)) {
-    const pv = await fetchPreview(link);
+  if (userLink && (!cardImage || !cardTitle || !cardDesc)) {
+    const pv = await fetchPreview(userLink);
     if (pv) {
       cardImage = cardImage || pv.image;
       cardTitle = cardTitle || pv.title;
