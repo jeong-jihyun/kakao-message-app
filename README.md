@@ -16,7 +16,8 @@
 | 주소로 | `GET /api/notify?key=관리키&text=내용` (선택 `&link=https://...`) |
 | 본문으로 | `POST /api/notify` + 헤더 `x-notify-key: 관리키` + JSON `{ "text": "내용", "link": "https://..." }` |
 
-- 내용은 200자까지 보내집니다.
+- 카카오톡 말풍선에는 200자까지 들어가고, 더 길면 줄여서 보냅니다. **"자세히 보기"를 누르면 보낸 내용 전체가 나오는 상세 화면(`/m/<난수>`)이 열립니다.**
+- 상세 화면에 요약과 다른 긴 내용을 보여 주려면 `&detail=긴내용`(최대 3000자)을 붙입니다. `&link=`를 직접 주면 상세 화면 대신 그 링크가 열립니다.
 - 성공 `{"ok":true}`, 실패 `{"ok":false,"error":"...","needsAuth":true/false}`. `needsAuth` 가 true 면 최초 인증을 다시 해야 합니다.
 
 ## 환경변수
@@ -34,6 +35,8 @@
 
 - `app/page.js` : 상태 확인, 최초 인증 시작, 테스트 전송
 - `app/api/auth/login|callback|status` : 최초 인증과 상태 확인
+- `app/m/[id]/page.js` : "자세히 보기" 상세 화면
+- `lib/messages.js` : 보낸 메시지 전문 저장(Blob)
 - `app/api/notify/route.js` : 보내기 주소
 - `lib/kakao.js` : 토큰 발급·갱신, 전송
 - `lib/store.js` : 토큰 저장소 (Blob, 테스트용 파일)
