@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sendToMe, KakaoError } from "../../../lib/kakao.js";
 import { keyIsValid } from "../../../lib/guard.js";
 import { saveMessage, MAX_DETAIL } from "../../../lib/messages.js";
+import { fetchPreview, isPublicHttps } from "../../../lib/og.js";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ function baseUrl(request) {
   return new URL(request.url).origin;
 }
 
-async function handle(request, { key, text, link, detail }) {
+async function handle(request, { key, text, link, detail, title, desc, image }) {
   if (!process.env.NOTIFY_SECRET) return fail(500, "서버에 NOTIFY_SECRET 환경변수가 없습니다.");
   if (!keyIsValid(key)) return fail(401, "관리 키가 맞지 않습니다.");
 
@@ -43,13 +44,29 @@ async function handle(request, { key, text, link, detail }) {
     }
   }
 
+  // 카드(이미지+제목+설명): image 를 직접 주거나, link 를 주면 그 페이지의 미리보기 정보를 가져와 쓴다.
+  let card = null;
+  let cardImage = image && isPublicHttps(image) ? image : "";
+  let cardTitle = (title || "").toString().trim();
+  let cardDesc = (desc || "").toString().trim();
+  if (link && /^https?:\/\//.test(link) && (!cardImage || !cardTitle || !cardDesc)) {
+    const pv = await fetchPreview(link);
+    if (pv) {
+      cardImage = cardImage || pv.image;
+      cardTitle = cardTitle || pv.title;
+      cardDesc = cardDesc || pv.description;
+    }
+  }
+  if (cardImage) card = { image: cardImage, title: cardTitle || shown.split("\n")[0], description: cardDesc || (cardTitle ? shown : "") };
+
   try {
-    const r = await sendToMe({ text: shown, link: safeLink });
+    const r = await sendToMe({ text: shown, link: safeLink, card });
     return NextResponse.json({
       ok: true,
       sent: shown.length,
       truncated,
       detail: detailSaved,
+      card: !!card,
       tokenRefreshed: r.refreshed,
     });
   } catch (e) {
@@ -68,6 +85,9 @@ export async function GET(request) {
     text: searchParams.get("text"),
     link: searchParams.get("link"),
     detail: searchParams.get("detail"),
+    title: searchParams.get("title"),
+    desc: searchParams.get("desc"),
+    image: searchParams.get("image"),
   });
 }
 
@@ -82,5 +102,8 @@ export async function POST(request) {
     text: body.text,
     link: body.link,
     detail: body.detail,
+    title: body.title,
+    desc: body.desc,
+    image: body.image,
   });
 }
