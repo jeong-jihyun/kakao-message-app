@@ -32,104 +32,99 @@ const yellowBtn = {
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
-  textDecoration: "none",
   marginTop: 16,
 };
+const grayBtn = { ...yellowBtn, background: "#eee", fontWeight: 600 };
 
 export default function Home() {
-  const [loggedIn, setLoggedIn] = useState(null);
+  const [info, setInfo] = useState(null);
+  const [key, setKey] = useState("");
   const [text, setText] = useState("");
-  const [link, setLink] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/status")
       .then((r) => r.json())
-      .then((d) => setLoggedIn(d.loggedIn))
-      .catch(() => setLoggedIn(false));
-    const err = new URLSearchParams(window.location.search).get("error");
-    if (err) setStatus("로그인 오류: " + err);
+      .then(setInfo)
+      .catch(() => setInfo({ authorized: false, error: "상태를 불러오지 못했습니다." }));
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("error")) setStatus("❌ 인증 오류: " + p.get("error"));
+    if (p.get("authorized")) setStatus("✅ 최초 인증이 끝났습니다. 이제 계속 사용할 수 있어요.");
   }, []);
 
-  async function send() {
-    if (!text.trim()) {
-      setStatus("보낼 내용을 입력해 주세요.");
+  function startAuth() {
+    if (!key.trim()) {
+      setStatus("관리 키를 먼저 입력해 주세요.");
+      return;
+    }
+    window.location.href = "/api/auth/login?key=" + encodeURIComponent(key.trim());
+  }
+
+  async function testSend() {
+    if (!key.trim() || !text.trim()) {
+      setStatus("관리 키와 보낼 내용을 모두 입력해 주세요.");
       return;
     }
     setStatus("보내는 중...");
-    const res = await fetch("/api/send", {
+    const res = await fetch("/api/notify", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, link }),
+      headers: { "Content-Type": "application/json", "x-notify-key": key.trim() },
+      body: JSON.stringify({ text }),
     });
     const data = await res.json();
-    if (res.ok) {
-      setStatus("✅ 카카오톡으로 보냈어요! 나와의 채팅을 확인해 보세요.");
-      setText("");
-    } else {
-      if (res.status === 401) setLoggedIn(false);
-      setStatus("❌ 실패: " + (data.error || "알 수 없는 오류"));
-    }
+    setStatus(
+      data.ok
+        ? "✅ 보냈어요. 카카오톡 '나와의 채팅'을 확인해 보세요."
+        : "❌ 실패: " + (data.error || "알 수 없는 오류") + (data.needsAuth ? " → 위에서 인증을 다시 하세요." : "")
+    );
   }
 
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setLoggedIn(false);
-    setStatus("");
-  }
+  const done = info?.authorized;
 
   return (
     <main style={box}>
       <h1 style={{ marginTop: 0, fontSize: 22 }}>💬 카카오톡 나에게 보내기</h1>
 
-      {loggedIn === null && <p>확인 중...</p>}
-
-      {loggedIn === false && (
-        <>
-          <p style={{ color: "#555" }}>
-            카카오 계정으로 로그인하면 내 카카오톡으로 메시지를 보낼 수 있어요.
-          </p>
-          <a href="/api/auth/login" style={yellowBtn}>
-            카카오로 로그인
-          </a>
-        </>
+      {info === null && <p>확인 중...</p>}
+      {info && (
+        <p style={{ color: done ? "#1a7f37" : "#b35900" }}>
+          {done
+            ? "인증 상태: 완료 (토큰은 자동으로 갱신됩니다)"
+            : "인증 상태: 아직 안 됨 — 아래에서 최초 인증을 해 주세요"}
+          {info.error ? ` / ${info.error}` : ""}
+        </p>
       )}
 
-      {loggedIn === true && (
+      <label style={{ display: "block", marginTop: 12 }}>
+        관리 키
+        <input
+          type="password"
+          style={input}
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          placeholder="NOTIFY_SECRET 값"
+          autoComplete="off"
+        />
+      </label>
+
+      <button style={yellowBtn} onClick={startAuth}>
+        {done ? "카카오로 다시 인증하기" : "카카오로 최초 인증하기"}
+      </button>
+
+      {done && (
         <>
-          <label>
-            보낼 내용
+          <label style={{ display: "block", marginTop: 22 }}>
+            테스트로 보낼 내용
             <textarea
-              rows={4}
+              rows={3}
               style={input}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="예) 오늘 할 일: 블로그 글 1개 올리기"
+              placeholder="예) 테스트 메시지입니다"
             />
           </label>
-          <label style={{ display: "block", marginTop: 14 }}>
-            눌렀을 때 열릴 링크 (선택)
-            <input
-              style={input}
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://..."
-            />
-          </label>
-          <button style={yellowBtn} onClick={send}>
-            나에게 카카오톡 보내기
-          </button>
-          <button
-            onClick={logout}
-            style={{
-              marginTop: 12,
-              background: "none",
-              border: "none",
-              color: "#888",
-              cursor: "pointer",
-            }}
-          >
-            로그아웃
+          <button style={grayBtn} onClick={testSend}>
+            나에게 테스트 보내기
           </button>
         </>
       )}
