@@ -1,4 +1,5 @@
 import { loadMessage } from "../../../lib/messages.js";
+import { isHtml, sanitizeDetail } from "../../../lib/render.js";
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +44,18 @@ export default async function MessagePage({ params }) {
     <main style={card}>
       <h1 style={{ fontSize: 20, margin: "0 0 4px" }}>💬 받은 메시지</h1>
       <p style={{ color: "#888", fontSize: 13, margin: "0 0 16px" }}>{when(m.createdAt)}</p>
-      <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.7, fontSize: 16 }}>
-        {m.detail}
-      </div>
+      {isHtml(m.detail) ? (
+        <div
+          className="msg-body"
+          style={{ wordBreak: "break-word", lineHeight: 1.7, fontSize: 16 }}
+          dangerouslySetInnerHTML={{ __html: sanitizeDetail(m.detail) }}
+        />
+      ) : (
+        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.7, fontSize: 16 }}>
+          {m.detail}
+        </div>
+      )}
+      <style>{`.msg-body img{max-width:100%;height:auto;border-radius:8px}.msg-body table{border-collapse:collapse;max-width:100%}.msg-body th,.msg-body td{border:1px solid #ddd;padding:6px 10px}.msg-body pre{white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:8px}.msg-body blockquote{margin:8px 0;padding-left:12px;border-left:3px solid #ddd;color:#555}`}</style>
     </main>
   );
 }

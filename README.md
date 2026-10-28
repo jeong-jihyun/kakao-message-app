@@ -17,7 +17,7 @@
 | 본문으로 | `POST /api/notify` + 헤더 `x-notify-key: 관리키` + JSON `{ "text": "내용", "link": "https://..." }` |
 
 - 카카오톡 말풍선에는 200자까지 들어가고, 더 길면 줄여서 보냅니다. **"자세히 보기"를 누르면 보낸 내용 전체가 나오는 상세 화면(`/m/<난수>`)이 열립니다.**
-- 상세 화면에 요약과 다른 긴 내용을 보여 주려면 `&detail=긴내용`(최대 3000자)을 붙입니다. `&link=`를 직접 주면 상세 화면 대신 그 링크가 열립니다.
+- 상세 화면에 요약과 다른 긴 내용을 보여 주려면 `&detail=긴내용`(최대 20000자)을 붙입니다. 일반 글은 줄바꿈 그대로 보이고, HTML 을 넣으면 안전한 태그만 남겨 보여 줍니다(p, br, b, i, h1~h4, ul/ol/li, a, img(https만), table, pre, blockquote 등. script·이벤트·iframe 은 제거). HTML 이 길면 POST(`{"text","detail"}`)로 보내세요. `&link=`를 직접 주면 상세 화면 대신 그 링크가 열립니다.
 - 성공 `{"ok":true}`, 실패 `{"ok":false,"error":"...","needsAuth":true/false}`. `needsAuth` 가 true 면 최초 인증을 다시 해야 합니다.
 
 ## 환경변수
