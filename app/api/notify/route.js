@@ -3,6 +3,7 @@ import { sendToMe, KakaoError } from "../../../lib/kakao.js";
 import { keyIsValid } from "../../../lib/guard.js";
 import { saveMessage, MAX_DETAIL } from "../../../lib/messages.js";
 import { fetchPreview, isPublicHttps } from "../../../lib/og.js";
+import { pushToPhone } from "../../../lib/ntfy.js";
 
 export const dynamic = "force-dynamic";
 
@@ -64,10 +65,15 @@ async function handle(request, { key, text, link, detail, title, desc, image }) 
   }
   if (cardImage) card = { image: cardImage, title: cardTitle || shown.split("\n")[0], description: cardDesc || (cardTitle ? shown : "") };
 
+  // 폰 푸시(ntfy)는 카카오와 따로 보낸다. 실패해도 카카오 발송에는 영향 없다.
+  const pushPromise = pushToPhone({ text: shown, link: safeLink });
+
   try {
     const r = await sendToMe({ text: shown, link: safeLink, card });
+    const push = await pushPromise;
     return NextResponse.json({
       ok: true,
+      push,
       sent: shown.length,
       truncated,
       detail: detailSaved,
@@ -75,8 +81,9 @@ async function handle(request, { key, text, link, detail, title, desc, image }) 
       tokenRefreshed: r.refreshed,
     });
   } catch (e) {
+    const push = await pushPromise;
     if (e instanceof KakaoError) {
-      return fail(e.status, e.message, { code: e.code, needsAuth: e.needsAuth });
+      return fail(e.status, e.message, { code: e.code, needsAuth: e.needsAuth, push });
     }
     return fail(500, e.message || "알 수 없는 오류");
   }
