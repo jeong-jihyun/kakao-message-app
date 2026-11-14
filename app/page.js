@@ -130,6 +130,11 @@ export default function Home() {
       )}
 
       {status && <p style={{ marginTop: 18 }}>{status}</p>}
+
+      <details style={{ marginTop: 24, fontSize: 14, color: "#555" }}>
+        <summary style={{ cursor: "pointer" }}>ChatGPT · Gemini 연결 주소</summary>
+        <p>MCP 주소: <code>/api/mcp</code><br />ChatGPT 맞춤 GPT 설명서: <code>/api/openapi</code><br />인증 헤더: <code>x-notify-key</code> (AI용 키)</p>
+      </details>
     </main>
   );
 }

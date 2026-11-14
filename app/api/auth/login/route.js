@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { keyIsValid } from "../../../../lib/guard.js";
+import { adminKeyIsValid } from "../../../../lib/guard.js";
 
 export const dynamic = "force-dynamic"; // 빌드 때 고정하지 않고 요청마다 환경변수를 읽음
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"; // 빌드 때 고정하지 않고 요청
 // (아무나 로그인해서 내 토큰을 덮어쓰지 못하게 하기 위함)
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  if (!keyIsValid(searchParams.get("key"))) {
+  if (!adminKeyIsValid(searchParams.get("key"))) {
     return NextResponse.json({ error: "관리 키가 맞지 않습니다." }, { status: 401 });
   }
 

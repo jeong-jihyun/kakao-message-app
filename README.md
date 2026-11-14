@@ -1,7 +1,35 @@
-# 카카오톡 나에게 보내기 (Next.js, 중계 서버)
+# 카카오톡 나에게 보내기 + 네이버 일정 (Next.js, AI 공용 입구)
 
 한 번만 카카오 인증을 해 두면, 이후에는 주소 하나로 내 카카오톡(나와의 채팅)에 메시지를 보낼 수 있는 중계 앱입니다.
 클라우드 예약 작업처럼 카카오 서버에 직접 접속하지 못하는 곳에서도 이 앱을 거쳐 보낼 수 있습니다.
+
+## AI 공용 입구 (ChatGPT · Gemini · Claude 모두 사용)
+
+같은 서버가 AI 도구 연결 주소 2개를 엽니다. 키는 **AI용 키(`HUB_API_KEY`)** 를 따로 만들어 쓰세요. 새어도 카카오 재인증은 못 합니다(재인증은 관리 키 `NOTIFY_SECRET` 만 가능).
+
+| 주소 | 대상 | 설명 |
+|---|---|---|
+| `/api/mcp` | Claude, Gemini CLI, ChatGPT 커넥터 | MCP(Streamable HTTP). 도구 3개: `send_kakao_message`, `create_naver_calendar_event`, `check_connection_status` |
+| `/api/openapi` | ChatGPT 맞춤 GPT(Actions) | OpenAPI 3.1 설명서. 인증은 헤더 `x-notify-key` |
+| `/api/calendar` | 직접 호출 | 네이버 캘린더 일정 등록 (`title`, `description`, `start`, `duration_minutes`) |
+| `/api/hub-status` | 직접 호출 | 카카오·네이버 연결 상태 (토큰 값은 안 나옴) |
+
+키는 헤더 `x-notify-key`, `Authorization: Bearer 키`, 주소 `?key=` 중 아무거나 됩니다.
+
+### 구조
+
+```
+AI (ChatGPT / Gemini / Claude)
+   └─ kakao-message-app  (이 앱)  ── 카카오 토큰: Vercel Blob 에 보관·자동 갱신
+         └─ naver-blog-planner (네이버 일정 앱) ── 네이버 열쇠: Vercel Blob 에 보관·자동 갱신
+```
+
+- 네이버 앱 설정값(Client ID/Secret)과 로그인은 naver-blog-planner 에 두었습니다. 이 앱은 `NAVER_PLANNER_URL`, `NAVER_LOG_KEY` 로 거기에 전달만 합니다.
+- 두 앱의 Vercel "Vercel Authentication"(로그인 보호)은 꺼야 AI 서비스가 접속할 수 있습니다. 대신 모든 호출에 키가 필요합니다.
+
+### 추가 환경변수
+
+`HUB_API_KEY`(AI용 키), `NAVER_PLANNER_URL`(예: https://naver-blog-planner.vercel.app), `NAVER_LOG_KEY`(naver-blog-planner 의 `LOG_KEY` 와 같은 값)
 
 ## 동작 방식
 
@@ -41,7 +69,10 @@
 - `app/api/notify/route.js` : 보내기 주소
 - `lib/kakao.js` : 토큰 발급·갱신, 전송
 - `lib/store.js` : 토큰 저장소 (Blob, 테스트용 파일)
-- `lib/guard.js` : 관리 키 확인
+- `lib/guard.js` : 키 확인 (관리 키 / AI용 키 구분)
+- `lib/notify.js` : 보내기 공통 처리 (주소와 MCP 가 함께 사용)
+- `lib/tools.js`, `app/api/mcp`, `app/api/openapi` : AI 도구 정의와 연결 주소
+- `lib/naver-proxy.js`, `app/api/calendar`, `app/api/hub-status` : 네이버 일정 전달, 상태 확인
 
 ## 보안 메모
 
