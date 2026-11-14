@@ -5,7 +5,7 @@
 
 ## AI 공용 입구 (ChatGPT · Gemini · Claude 모두 사용)
 
-같은 서버가 AI 도구 연결 주소 2개를 엽니다. 키는 **AI용 키(`HUB_API_KEY`)** 를 따로 만들어 쓰세요. 새어도 카카오 재인증은 못 합니다(재인증은 관리 키 `NOTIFY_SECRET` 만 가능).
+같은 서버가 AI 도구 연결 주소 2개를 엽니다. 키는 **AI용 키**를 AI마다 따로 만들어 `HUB_API_KEYS=claude:키1,gemini:키2` 처럼 넣으세요(키 하나만 쓰려면 `HUB_API_KEY`). 새어도 카카오 재인증은 못 합니다(재인증은 관리 키 `NOTIFY_SECRET` 만 가능).
 
 | 주소 | 대상 | 설명 |
 |---|---|---|
