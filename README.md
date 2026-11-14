@@ -7,6 +7,11 @@
 
 같은 서버가 AI 도구 연결 주소 2개를 엽니다. 키는 **AI용 키**를 AI마다 따로 만들어 `HUB_API_KEYS=claude:키1,gemini:키2` 처럼 넣으세요(키 하나만 쓰려면 `HUB_API_KEY`). 새어도 카카오 재인증은 못 합니다(재인증은 관리 키 `NOTIFY_SECRET` 만 가능).
 
+### AI 키 발급·폐기 (관리 키 필요, 재배포 불필요)
+- 발급: `/api/admin/keys?key=<관리 키>&action=create&name=chatgpt` → 응답에 키가 **한 번만** 나옵니다.
+- 폐기: `...&action=revoke&name=chatgpt`, 목록: `...&action=list`
+- 서버에는 키 원문이 아니라 해시만 저장됩니다. 환경변수 `HUB_API_KEYS`는 없어도 됩니다.
+
 | 주소 | 대상 | 설명 |
 |---|---|---|
 | `/api/mcp` | Claude, Gemini CLI, ChatGPT 커넥터 | MCP(Streamable HTTP). 도구 3개: `send_kakao_message`, `create_naver_calendar_event`, `check_connection_status` |

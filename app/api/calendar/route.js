@@ -8,7 +8,7 @@ async function handle(key, f) {
   if (!process.env.NOTIFY_SECRET) {
     return NextResponse.json({ ok: false, error: "서버에 NOTIFY_SECRET 환경변수가 없습니다." }, { status: 500 });
   }
-  if (!keyIsValid(key)) {
+  if (!await keyIsValid(key)) {
     return NextResponse.json({ ok: false, error: "관리 키가 맞지 않습니다." }, { status: 401 });
   }
   const { status, body } = await createNaverEvent({

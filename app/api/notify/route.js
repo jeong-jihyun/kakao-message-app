@@ -10,7 +10,7 @@ function fail(status, error, extra = {}) {
 
 async function handle(request, { key, ...fields }) {
   if (!process.env.NOTIFY_SECRET) return fail(500, "서버에 NOTIFY_SECRET 환경변수가 없습니다.");
-  if (!keyIsValid(key)) return fail(401, "관리 키가 맞지 않습니다.");
+  if (!await keyIsValid(key)) return fail(401, "관리 키가 맞지 않습니다.");
   const { status, body } = await deliver({ base: baseUrl(request.url), ...fields });
   return NextResponse.json(body, { status });
 }

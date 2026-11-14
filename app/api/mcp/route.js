@@ -56,7 +56,7 @@ async function handleMessage(msg, ctx) {
 
 export async function POST(request) {
   const { searchParams, origin } = new URL(request.url);
-  if (!keyIsValid(keyFromRequest(request, searchParams))) {
+  if (!await keyIsValid(keyFromRequest(request, searchParams))) {
     return NextResponse.json(rpcError(null, -32001, "키가 맞지 않습니다."), {
       status: 401,
       headers: { ...CORS, "WWW-Authenticate": 'Bearer realm="notify-hub"' },
